@@ -1,0 +1,121 @@
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+
+    <script>
+        function getData() {
+            var foodInput = document.getElementById("foodSearch").value;
+            var url = `https://ndhkvb63d0.execute-api.us-east-1.amazonaws.com/default/food/${foodInput}`;
+
+            fetch(url).then(function (response) {
+                return response.json();
+            }).then(function (jsonResponse) {
+                var foodResultsElement = document.getElementById("foodResults");
+                var welcomeScreenElement = document.getElementById("welcomeScreen");
+
+                // If no results were returned... display default screen...
+                if (jsonResponse.message == "No Results") {
+                    welcomeScreenElement.style.display = 'block'; // this toggles on welcome screen...
+                    foodResultsElement.style.display = 'none';   // and toggles off food results
+                    return;
+                }
+
+                welcomeScreenElement.style.display = 'none';
+                foodResultsElement.style.display = 'block';
+
+                document.getElementById("foodName").innerHTML = jsonResponse.food_name;
+                document.getElementById("foodDescription").innerHTML = jsonResponse.food_description;
+
+                var imageUrl = jsonResponse.image_url;
+                var foodImgElement = document.getElementById("foodImage");
+                if (imageUrl != null && imageUrl != "") {
+                    // Load image from other S3 bucket used for food content
+                    foodImgElement.src = `https://sanderson-project2-foodcontent.s3.amazonaws.com/${imageUrl}`;
+                    foodImgElement.title = jsonResponse.food_name;
+                    foodImgElement.alt = jsonResponse.food_name;
+                }
+                else {
+                    foodImgElement.src = "";
+                    foodImgElement.title = "";
+                    foodImgElement.alt = "";
+                }
+
+                document.getElementById("foodCategoryImage").src = jsonResponse.icon_path;
+                document.getElementById("foodCategoryText").innerHTML = `${jsonResponse.category_name} Food`;
+
+                var ingredients = '';
+                jsonResponse.ingredients.forEach(function (ingredient) {
+                    ingredients += '<li class="list-group-item">' + ingredient + '</li>';
+                });
+
+                document.getElementById("ingredientsList").innerHTML = ingredients;
+            });
+        }
+    </script>
+</head>
+<body>
+    <!-- Header section that shows brand icon and allows for searching -->
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-light border-bottom box-shadow mb-3">
+            <div class="container">
+                <a class="navbar-brand" href="/index.html">
+                    <img alt="Brand" src="/images/food_brand_icon.png" height="45" /> Lambda Food
+                </a>
+                <div class="form-inline">
+                    <input class="form-control mr-sm-2" id="foodSearch" type="search" placeholder="Search for Food" aria-label="Search" name="foodSearch">
+                    <button onclick="getData()" class="btn btn-outline-success my-2 my-sm-0">Search</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Welcome screen section that shows when no search has happened yet, or bad search result is sent.  
+        This is hidden when valid food results are searched. -->
+    <div id="welcomeScreen" class="container" style="font-size:large;text-align:center;">
+        <p style="font-size:larger">
+            Hello!
+        </p>
+        <p>
+            This is a simple website created for Project Two of Cloud Computing 605.635.
+        </p>
+        <p>
+            You can use it to search up your favorite foods! (<span style="font-style:italic;">*Hint hint*</span> try: Taco, Hamburger, or Pizza)
+        </p>
+        <p>
+            This page is served as a static page from an Amazon S3 bucket and it can make asynchronous calls to an API Gateway Endpoint, which calls into a Lambda function.  The Lambda function queries an Aurora database and returns the result back to the page for display.  The diagram below outlines the architecture at a high level.
+        </p>
+        <hr />
+        <img src="images/architecture-diagram.png" alt="Architecture Diagram"/>
+        <hr />
+    </div>
+
+    <!-- Food results screen.  This will show when food is searched. Initially starts as hidden to show welcome screen. -->
+    <div id="foodResults" class="container" style="display:none;">
+        <main role="main" class="pb-3">
+            <div class="row">
+                <div class="col-md-9">
+                    <h1 id="foodName"></h1>
+                    <hr />
+                    <p id="foodDescription" style="font-size:larger"></p>
+                    <img id="foodCategoryImage" height="50"/><span style="margin:5px;" id="foodCategoryText"></span>
+                </div>
+                <div class="col-md-3 text-right">
+                    <img id="foodImage" src="" height="250" />
+                </div>
+            </div>
+            <div>
+                <h4>Common Ingredients</h4>
+                <hr />
+                <ul id="ingredientsList" class="list-group">
+                    <!-- This will be filled in with List Item <li> elements when search is performed -->
+                </ul>
+            </div>
+        </main>
+    </div>
+
+    <!-- jQuery and Bootstrap Bundle (includes Popper) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns" crossorigin="anonymous"></script>
+
+</body>
+</html>
